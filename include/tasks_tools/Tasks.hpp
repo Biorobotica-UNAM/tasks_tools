@@ -1,22 +1,19 @@
 #pragma once
-
 #include <string>
 #include <memory>
 #include <mutex>
 #include <condition_variable>
-
 #include "rclcpp/rclcpp.hpp"
-#include "std_srvs/srv/set_bool.hpp"
+#include "vision_interfaces/srv/find_object.hpp"
 
 class Tasks
 {
 public:
     explicit Tasks(const rclcpp::Node::SharedPtr& node);
 
-    std::string Find(const std::string& grammar);
-
+    vision_interfaces::srv::FindObject::Response Find(const std::string& category,
+                                                       const std::string& item);
 private:
     rclcpp::Node::SharedPtr node_;
-
-    rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr human_follower_client_;
+    rclcpp::Client<vision_interfaces::srv::FindObject>::SharedPtr find_object_client_;
 };
