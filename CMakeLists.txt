@@ -10,6 +10,7 @@ find_package(std_srvs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(vision_interfaces REQUIRED)
 find_package(faces_interfaces REQUIRED)
+find_package(human_interfaces REQUIRED)
 
 include_directories(
   include
@@ -19,6 +20,7 @@ include_directories(
   ${geometry_msgs_INCLUDE_DIRS}
   ${vision_interfaces_INCLUDE_DIRS}
   ${faces_interfaces_INCLUDE_DIRS}
+  ${human_interfaces_INCLUDE_DIRS}
 )
 
 add_library(tasks_tools SHARED
@@ -32,6 +34,7 @@ ament_target_dependencies(tasks_tools
   geometry_msgs
   vision_interfaces
   faces_interfaces
+  human_interfaces
 )
 
 install(DIRECTORY include/

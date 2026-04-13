@@ -7,6 +7,7 @@ Tasks::Tasks(const rclcpp::Node::SharedPtr& node)
     find_object_client_ = node_->create_client<vision_interfaces::srv::FindObject>("/tasks/find_object");
     find_person_client_ = node_->create_client<faces_interfaces::srv::FaceRecog>("/tasks/find_person");
     find_seat_client_   = node_->create_client<std_srvs::srv::Trigger>("/tasks/find_seat");
+    find_waiving_client_ = node_->create_client<std_srvs::srv::Trigger>("/tasks/find_waving_human");
 }
 
 // ---------------------------------------------------------
@@ -38,7 +39,7 @@ vision_interfaces::srv::FindObject::Response Tasks::FindObject(const std::string
         });
 
     std::unique_lock<std::mutex> lock(mtx);
-    if (!cv.wait_for(lock, 10s, [&]{ return done; }))
+    if (!cv.wait_for(lock, 15s, [&]{ return done; }))
     {
         RCLCPP_ERROR(node_->get_logger(), "FindObject service timed out");
         return empty;
@@ -136,3 +137,46 @@ std_srvs::srv::Trigger::Response Tasks::FindSeat()
 
     return response;
 }
+
+// ---------------------------------------------------------
+// FindWaivingHuman
+// ---------------------------------------------------------
+std_srvs::srv::Trigger::Response Tasks::FindWaivingHuman()
+{
+    std_srvs::srv::Trigger::Response empty;
+    if (!find_waiving_client_->wait_for_service(1000ms))
+    {
+        RCLCPP_ERROR(node_->get_logger(), "FindWaivingHuman service unavailable (/tasks/find_waving_human");
+        return empty;
+    }
+
+    auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool done = false;
+    std_srvs::srv::Trigger::Response response;
+
+    find_waiving_client_->async_send_request(request,
+        [&](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future)
+        {
+            response = *future.get();
+            done = true;
+            cv.notify_one();
+        });
+
+    std::unique_lock<std::mutex> lock(mtx);
+    if (!cv.wait_for(lock, 25s, [&]{ return done; }))
+    {
+        RCLCPP_ERROR(node_->get_logger(), "FindWaivingHuman service timed out");
+        return empty;
+    }
+
+    if (response.success)
+        RCLCPP_INFO(node_->get_logger(), "FindWaivingHuman OK: %s", response.message.c_str());
+    else
+        RCLCPP_ERROR(node_->get_logger(), "FindWaivingHuman ERROR: %s", response.message.c_str());
+
+    return response;
+}
+
