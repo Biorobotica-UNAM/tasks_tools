@@ -53,4 +53,14 @@ install(
 ament_export_include_directories(include)
 ament_export_libraries(tasks_tools)
 
+ament_export_dependencies(
+  rclcpp
+  std_msgs
+  std_srvs
+  geometry_msgs
+  vision_interfaces
+  faces_interfaces
+  human_interfaces
+)
+
 ament_package()
