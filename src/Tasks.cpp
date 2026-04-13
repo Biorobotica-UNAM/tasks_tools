@@ -141,7 +141,7 @@ std_srvs::srv::Trigger::Response Tasks::FindSeat()
 // ---------------------------------------------------------
 // FindWaivingHuman
 // ---------------------------------------------------------
-std_srvs::srv::Trigger::Response Tasks::FindWaivingHuman()
+std_srvs::srv::Trigger::Response Tasks::FindWavingHuman()
 {
     std_srvs::srv::Trigger::Response empty;
     if (!find_waiving_client_->wait_for_service(1000ms))
