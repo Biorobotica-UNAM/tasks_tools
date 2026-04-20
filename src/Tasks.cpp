@@ -4,34 +4,34 @@ using namespace std::chrono_literals;
 Tasks::Tasks(const rclcpp::Node::SharedPtr& node)
 : node_(node)
 {
-    find_object_client_ = node_->create_client<vision_interfaces::srv::FindObject>("/tasks/find_object");
+    find_object_client_ = node_->create_client<vision_interfaces::srv::GetBbox>("/tasks/find_object");
     find_person_client_ = node_->create_client<faces_interfaces::srv::FaceRecog>("/tasks/find_person");
     find_seat_client_   = node_->create_client<std_srvs::srv::Trigger>("/tasks/find_seat");
     find_waiving_client_ = node_->create_client<std_srvs::srv::Trigger>("/tasks/find_waving_human");
 }
 
 // ---------------------------------------------------------
-// FindObject
+// GetBbox  
 // ---------------------------------------------------------
-vision_interfaces::srv::FindObject::Response Tasks::FindObject(const std::string& class_name)
+vision_interfaces::srv::GetBbox::Response Tasks::GetBbox(const std::string& class_name)
 {
-    vision_interfaces::srv::FindObject::Response empty;
+    vision_interfaces::srv::GetBbox::Response empty;
     if (!find_object_client_->wait_for_service(1000ms))
     {
-        RCLCPP_ERROR(node_->get_logger(), "FindObject service unavailable (/tasks/find_object)");
+        RCLCPP_ERROR(node_->get_logger(), "GetBbox service unavailable (/tasks/get_bbox)");
         return empty;
     }
 
-    auto request = std::make_shared<vision_interfaces::srv::FindObject::Request>();
+    auto request = std::make_shared<vision_interfaces::srv::GetBbox::Request>();
     request->class_name = class_name;
 
     std::mutex mtx;
     std::condition_variable cv;
     bool done = false;
-    vision_interfaces::srv::FindObject::Response response;
+    vision_interfaces::srv::GetBbox::Response response;
 
     find_object_client_->async_send_request(request,
-        [&](rclcpp::Client<vision_interfaces::srv::FindObject>::SharedFuture future)
+        [&](rclcpp::Client<vision_interfaces::srv::GetBbox>::SharedFuture future)
         {
             response = *future.get();
             done = true;
@@ -48,7 +48,7 @@ vision_interfaces::srv::FindObject::Response Tasks::FindObject(const std::string
     if (response.success)
         RCLCPP_INFO(node_->get_logger(), "FindObject OK: %s", response.detected_class.c_str());
     else
-        RCLCPP_ERROR(node_->get_logger(), "FindObject ERROR: %s", response.message.c_str());
+        RCLCPP_ERROR(node_->get_logger(), "FindObject ERROR");
 
     return response;
 }
