@@ -4,16 +4,49 @@ using namespace std::chrono_literals;
 Tasks::Tasks(const rclcpp::Node::SharedPtr& node)
 : node_(node)
 {
-    find_object_client_ = node_->create_client<vision_interfaces::srv::GetBbox>("/tasks/find_object");
+    find_object_client_ = node_->create_client<vision_interfaces::srv::FindObject>("/tasks/find_object");
     find_person_client_ = node_->create_client<faces_interfaces::srv::FaceRecog>("/tasks/find_person");
     find_seat_client_   = node_->create_client<std_srvs::srv::Trigger>("/tasks/find_seat");
     find_waiving_client_ = node_->create_client<std_srvs::srv::Trigger>("/tasks/find_waving_human");
 }
 
+
+// ---------------------------------------------------------
+// FindObject (Reemplaza a GetBbox)
+// ---------------------------------------------------------
+vision_interfaces::srv::FindObject::Response Tasks::FindObject(const std::string& class_name) {
+    vision_interfaces::srv::FindObject::Response empty;
+    if (!find_object_client_->wait_for_service(1s)) {
+        RCLCPP_ERROR(node_->get_logger(), "FindObject service unavailable");
+        return empty;
+    }
+
+    auto request = std::make_shared<vision_interfaces::srv::FindObject::Request>();
+    request->class_name = class_name;
+
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool done = false;
+    vision_interfaces::srv::FindObject::Response response;
+
+    find_object_client_->async_send_request(request,
+        [&](rclcpp::Client<vision_interfaces::srv::FindObject>::SharedFuture future) {
+            response = *future.get();
+            done = true;
+            cv.notify_one();
+        });
+
+    std::unique_lock<std::mutex> lock(mtx);
+    if (!cv.wait_for(lock, 25s, [&]{ return done; })) {
+        RCLCPP_ERROR(node_->get_logger(), "FindObject service timed out");
+        return empty;
+    }
+    return response;
+}
 // ---------------------------------------------------------
 // GetBbox  
 // ---------------------------------------------------------
-vision_interfaces::srv::GetBbox::Response Tasks::GetBbox(const std::string& class_name)
+/*vision_interfaces::srv::GetBbox::Response Tasks::GetBbox(const std::string& class_name)
 {
     vision_interfaces::srv::GetBbox::Response empty;
     if (!find_object_client_->wait_for_service(1000ms))
@@ -51,7 +84,7 @@ vision_interfaces::srv::GetBbox::Response Tasks::GetBbox(const std::string& clas
         RCLCPP_ERROR(node_->get_logger(), "FindObject ERROR");
 
     return response;
-}
+}*/
 
 // ---------------------------------------------------------
 // FindPerson
